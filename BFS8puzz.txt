@@ -1,0 +1,143 @@
+import java.util.*;
+class PuzzleNode {
+    int[][] puzzleState;
+    PuzzleNode parent;
+    int zeroRow;
+    int zeroCol;
+    int heuristic;
+    PuzzleNode(int[][] puzzleState, PuzzleNode parent, int zeroRow, int zeroCol, int heuristic) {
+        this.puzzleState = puzzleState;
+        this.parent = parent;
+        this.zeroRow = zeroRow;
+        this.zeroCol = zeroCol;
+        this.heuristic = heuristic;
+    }
+}
+public class bestFirstSearch {
+    static int[][] initial = new int[3][3];
+    static int[][] goal = new int[3][3];
+    public static void main(String[] args) {
+        Scanner input = new Scanner(System.in);
+        System.out.println("Enter the initial state of the puzzle: ");
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                initial[i][j] = input.nextInt();
+            }
+        }
+        System.out.println("Enter the goal state of the puzzle: ");
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                goal[i][j] = input.nextInt();
+            }
+        }
+        displayPuzzle(initial);
+        solvePuzzle();
+    }
+    public static void displayPuzzle(int[][] puzzleState) {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                System.out.print(puzzleState[i][j] + " ");
+            }
+            System.out.println();
+        }
+        System.out.println();
+    }
+    public static int[] findZero(int[][] puzzleState) {
+        for (int i = 0; i < puzzleState.length; i++) {
+            for (int j = 0; j < puzzleState[0].length; j++) {
+                if (puzzleState[i][j] == 0) {
+                    return new int[]{i, j};
+                }
+            }
+        }
+        return new int[]{-1, -1}; // Not found
+    }
+    public static void solvePuzzle() {
+        PriorityQueue<PuzzleNode> queue = new PriorityQueue<>(Comparator.comparingInt(node
+                -> node.heuristic));
+        Set<String> visited = new HashSet<>();
+        int[] zeroPosition = findZero(initial);
+        int zeroRow = zeroPosition[0];
+        int zeroCol = zeroPosition[1];
+        int heuristic = calculateHeuristic(initial, goal);
+        PuzzleNode root = new PuzzleNode(initial, null, zeroRow, zeroCol, heuristic);
+        queue.add(root);
+        while (!queue.isEmpty()) {
+            PuzzleNode currentState = queue.poll();
+            displayPuzzle(currentState.puzzleState);
+            if (isGoalState(currentState.puzzleState, goal)) {
+                System.out.println("Puzzle Solved!");
+                printMovesToSolution(currentState);
+                return;
+            }
+            ArrayList<PuzzleNode> neighbors = generateNeighbors(currentState);
+            for (PuzzleNode neighbor : neighbors) {
+                if (!visited.contains(Arrays.deepToString(neighbor.puzzleState))) {
+                    queue.add(neighbor);
+                    visited.add(Arrays.deepToString(neighbor.puzzleState));
+                }
+            }
+        }
+        System.out.println("No goal state found.");
+    }
+    public static void printMovesToSolution(PuzzleNode node) {
+        List<String> moves = new ArrayList<>();
+        while (node.parent != null) {
+            int zeroRow = node.parent.zeroRow;
+            int zeroCol = node.parent.zeroCol;
+            int nextRow = node.zeroRow;
+            int nextCol = node.zeroCol;
+            if (zeroRow == nextRow && zeroCol == nextCol - 1) {
+                moves.add("Right");
+            } else if (zeroRow == nextRow && zeroCol == nextCol + 1) {
+                moves.add("Left");
+            } else if (zeroRow == nextRow - 1 && zeroCol == nextCol) {
+                moves.add("Down");
+            } else if (zeroRow == nextRow + 1 && zeroCol == nextCol) {
+                moves.add("Up");
+            }
+            node = node.parent;
+        }
+        Collections.reverse(moves);
+        System.out.println("MOVES TO SOLUTION: " + String.join(" ", moves));
+    }
+    public static ArrayList<PuzzleNode> generateNeighbors(PuzzleNode currentState) {
+        int[] zeroPosition = findZero(currentState.puzzleState);
+        int zeroRow = zeroPosition[0];
+        int zeroCol = zeroPosition[1];
+        int[][] moves = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        ArrayList<PuzzleNode> newNeighbors = new ArrayList<>();
+        for (int[] move : moves) {
+            int nextRow = zeroRow + move[0];
+            int nextCol = zeroCol + move[1];
+            if (nextRow < 3 && nextRow >= 0 && nextCol < 3 && nextCol >= 0) {
+                int[][] newPuzzleState = new int[3][3];
+                for (int i = 0; i < currentState.puzzleState.length; i++) {
+                    System.arraycopy(currentState.puzzleState[i], 0, newPuzzleState[i], 0,
+                            currentState.puzzleState[i].length);
+                }
+                int value = newPuzzleState[nextRow][nextCol];
+                newPuzzleState[zeroRow][zeroCol] = value;
+                newPuzzleState[nextRow][nextCol] = 0;
+                int heuristic = calculateHeuristic(newPuzzleState, goal);
+                newNeighbors.add(new PuzzleNode(newPuzzleState, currentState, nextRow, nextCol,
+                        heuristic));
+            }
+        }
+        return newNeighbors;
+    }
+    public static boolean isGoalState(int[][] puzzleState, int[][] goalState) {
+        return Arrays.deepEquals(puzzleState, goalState);
+    }
+    public static int calculateHeuristic(int[][] puzzleState, int[][] goalState) {
+        int heuristic = 0;
+        for (int i = 0; i < puzzleState.length; i++) {
+            for (int j = 0; j < puzzleState[0].length; j++) {
+                if (puzzleState[i][j] != goalState[i][j]) {
+                    heuristic++;
+                }
+            }
+        }
+        return heuristic;
+    }
+}
